@@ -357,15 +357,6 @@ class SeleniumToolKit:
 
         return response_body
 
-    # def execute_cdp_cmd(self, cmd: str, cmd_args: dict) -> str:
-    #     execute_command = {'method': cmd, 'params': cmd_args}
-    #     async def execute_cdp_async():
-    #         async with self.__driver.bidi_connection() as session:
-    #             cdp_session = session.session
-    #             return await cdp_session.execute(execute_command)
-    #
-    #     return trio.run(execute_cdp_async)
-
     def execute_cdp_cmd(self, cmd: str, cmd_args: dict) -> str:
         """
         Useful for when executing CDP command in a remote driver

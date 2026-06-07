@@ -1,24 +1,16 @@
-[tool.poetry]
-name = "selenium-toolkit"
-version = "0.0.9"
-description = "this is not a awesome description"
-license = "MIT"
-authors = ["Jorge Vasconcelos <john@example.com>"]
-keywords = ["selenium", "webdriver"]
+[project]
+name = "browser-toolkit"
+version = "0.0.1"
+description = "Add your description here"
 readme = "README.md"
-homepage = "https://github.com/jorgepvasconcelos/webdriver-toolkit"
-repository = "https://github.com/jorgepvasconcelos/webdriver-toolkit"
+requires-python = ">=3.12"
+dependencies = [
+    "pydoll-python>=2.23.0",
+    "selenium>=4.44.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.9"
-selenium = "4.25.0"
 
-
-[tool.poetry.dev-dependencies]
-pytest = "*"
-pytest-html = "*"
-webdriver-manager = '*'
-
-[build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[project.urls]
+Homepage = "https://github.com/toriium/browser-toolkit"
+Documentation = "https://github.com/toriium/browser-toolkit/blob/master/README.md"
+Repository = "https://github.com/toriium/browser-toolkit"
