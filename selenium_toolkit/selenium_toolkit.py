@@ -11,8 +11,12 @@ from selenium.webdriver.chromium.webdriver import ChromiumDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.wait import WebDriverWait
-from selenium.common.exceptions import TimeoutException, InvalidSessionIdException, NoSuchElementException, \
-    WebDriverException
+from selenium.common.exceptions import (
+    TimeoutException,
+    InvalidSessionIdException,
+    NoSuchElementException,
+    WebDriverException,
+)
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 
 from selenium_toolkit.utils import create_locator
@@ -21,14 +25,14 @@ import functools
 
 
 class RequestType(StrEnum):
-    DOCUMENT = 'Document'
-    XHR = 'XHR'
-    IMAGE = 'Image'
-    SCRIPT = 'Script'
-    STYLESHEET = 'Stylesheet'
-    FONT = 'Font'
-    FETCH = 'Fetch'
-    OTHER = 'Other'
+    DOCUMENT = "Document"
+    XHR = "XHR"
+    IMAGE = "Image"
+    SCRIPT = "Script"
+    STYLESHEET = "Stylesheet"
+    FONT = "Font"
+    FETCH = "Fetch"
+    OTHER = "Other"
 
 
 @dataclass
@@ -72,7 +76,7 @@ class SeleniumToolKit:
         first, last = range_time
 
         if not (first >= 0 and last >= first):
-            raise ValueError(f'range_time must be a tuple with positive values')
+            raise ValueError(f"range_time must be a tuple with positive values")
 
         self._wait_time_range = range_time
 
@@ -86,11 +90,11 @@ class SeleniumToolKit:
         :param web_element:  If None is passed will perform the query selector in the whole page
         """
         if not query_selector:
-            raise ValueError('You need send a query_selector')
+            raise ValueError("You need send a query_selector")
 
         target = web_element if web_element else self.__driver
 
-        if query_selector[0] == '/':
+        if query_selector[0] == "/":
             web_element = target.find_element(By.XPATH, query_selector)
         else:
             web_element = target.find_element(By.CSS_SELECTOR, query_selector)
@@ -103,11 +107,11 @@ class SeleniumToolKit:
         :param web_element:  If None is passed will perform the query selector in the whole page
         """
         if not query_selector:
-            raise ValueError('You need send a query_selector')
+            raise ValueError("You need send a query_selector")
 
         target = web_element if web_element else self.__driver
 
-        if query_selector[0] == '/':
+        if query_selector[0] == "/":
             web_elements = target.find_elements(By.XPATH, query_selector)
         else:
             web_elements = target.find_elements(By.CSS_SELECTOR, query_selector)
@@ -175,7 +179,8 @@ class SeleniumToolKit:
     def element_is_present(self, wait_time: int, query_selector: str) -> bool:
         try:
             WebDriverWait(self.__driver, wait_time).until(
-                EC.presence_of_element_located(create_locator(query_selector)))
+                EC.presence_of_element_located(create_locator(query_selector))
+            )
             return True
         except TimeoutException:
             return False
@@ -183,7 +188,8 @@ class SeleniumToolKit:
     def element_is_visible(self, wait_time: int, query_selector: str) -> bool:
         try:
             WebDriverWait(self.__driver, wait_time).until(
-                EC.visibility_of_element_located(create_locator(query_selector)))
+                EC.visibility_of_element_located(create_locator(query_selector))
+            )
             return True
         except TimeoutException:
             return False
@@ -191,15 +197,15 @@ class SeleniumToolKit:
     def element_is_invisible(self, wait_time: int, query_selector: str) -> bool:
         try:
             WebDriverWait(self.__driver, wait_time).until(
-                EC.invisibility_of_element_located(create_locator(query_selector)))
+                EC.invisibility_of_element_located(create_locator(query_selector))
+            )
             return True
         except TimeoutException:
             return False
 
     def element_is_clickable(self, wait_time: int, query_selector: str) -> bool:
         try:
-            WebDriverWait(self.__driver, wait_time).until(
-                EC.element_to_be_clickable(create_locator(query_selector)))
+            WebDriverWait(self.__driver, wait_time).until(EC.element_to_be_clickable(create_locator(query_selector)))
             return True
         except TimeoutException:
             return False
@@ -207,7 +213,8 @@ class SeleniumToolKit:
     def text_is_present(self, wait_time: int, query_selector: str, text: str) -> bool:
         try:
             WebDriverWait(self.__driver, wait_time).until(
-                EC.text_to_be_present_in_element(create_locator(query_selector), text_=text))
+                EC.text_to_be_present_in_element(create_locator(query_selector), text_=text)
+            )
             return True
         except TimeoutException:
             return False
@@ -220,7 +227,7 @@ class SeleniumToolKit:
             return False
 
     def page_is_loading(self) -> bool:
-        if self.__driver.execute_script('return document.readyState') != 'complete':
+        if self.__driver.execute_script("return document.readyState") != "complete":
             return True
         else:
             return False
@@ -229,11 +236,11 @@ class SeleniumToolKit:
         if not isinstance(self.__driver, ChromiumDriver):
             TypeError("Your driver must be a ChromiumDriver type to use this method")
 
-        self.execute_cdp_cmd('Network.setBlockedURLs', {'urls': urls})
-        self.execute_cdp_cmd('Network.enable', {})
+        self.execute_cdp_cmd("Network.setBlockedURLs", {"urls": urls})
+        self.execute_cdp_cmd("Network.enable", {})
 
     def driver_hard_refresh(self) -> None:
-        self.__driver.execute_script('location.reload(true)')
+        self.__driver.execute_script("location.reload(true)")
 
     def webdriver_is_open(self) -> bool:
         try:
@@ -266,9 +273,12 @@ class SeleniumToolKit:
 
     def get_requests(self, request_url: str) -> list[Request] | None:
         parsed_logs = self.get_all_requests()
-        methods = ["Network.responseReceived", 'Network.requestWillBeSent', 'Network.requestWillBeSentExtraInfo',
-                   # "Page.windowOpen"  # I Only see in Redirect, maybe add in the future, does not have request_id
-                   ]
+        methods = [
+            "Network.responseReceived",
+            "Network.requestWillBeSent",
+            "Network.requestWillBeSentExtraInfo",
+            # "Page.windowOpen"  # I Only see in Redirect, maybe add in the future, does not have request_id
+        ]
         received_response_list = [response for response in parsed_logs if response["method"] in methods]
 
         resp_url = None
@@ -278,11 +288,11 @@ class SeleniumToolKit:
             params = response["params"]
             target_request_id = params.get("requestId")
             if params.get("request"):
-                urls_to_match.append(params['request']['url'])
+                urls_to_match.append(params["request"]["url"])
             if params.get("response"):
-                urls_to_match.append(params['response']['url'])
+                urls_to_match.append(params["response"]["url"])
             if params.get("redirectResponse"):
-                urls_to_match.append(params['redirectResponse']["url"])
+                urls_to_match.append(params["redirectResponse"]["url"])
 
             for url in urls_to_match:
                 if request_url in url:
@@ -304,11 +314,10 @@ class SeleniumToolKit:
                 method = response.get("method")
 
                 if target_request_id == request_id:
+                    if method == "Network.requestWillBeSentExtraInfo":
+                        headers = params.get("headers")
 
-                    if method == 'Network.requestWillBeSentExtraInfo':
-                        headers = params.get('headers')
-
-                        cookies_string = headers.get('cookie')
+                        cookies_string = headers.get("cookie")
                         if not cookies_string:
                             continue
 
@@ -316,21 +325,23 @@ class SeleniumToolKit:
                         cookie_parser.load(cookies_string)
                         cookies = dict(cookie_parser)
 
-                    if method == 'Network.requestWillBeSent':
-                        url = params['request']['url']
-                        request_type = RequestType(params['type'])
+                    if method == "Network.requestWillBeSent":
+                        url = params["request"]["url"]
+                        request_type = RequestType(params["type"])
 
                         if params.get("redirectResponse"):
-                            redirect_url = params['redirectResponse']['url']
+                            redirect_url = params["redirectResponse"]["url"]
                             if request_url in redirect_url:
                                 redirect = Redirect(url=redirect_url)
 
-            request_data = Request(url=url,
-                                   request_id=target_request_id,
-                                   cookies=cookies,
-                                   headers=headers,
-                                   redirect=redirect,
-                                   type=request_type)
+            request_data = Request(
+                url=url,
+                request_id=target_request_id,
+                cookies=cookies,
+                headers=headers,
+                redirect=redirect,
+                type=request_type,
+            )
             matched_requests.append(request_data)
 
         return matched_requests
@@ -345,7 +356,7 @@ class SeleniumToolKit:
             return None
 
         if len(received_requests) > 1:
-            raise ValueError('more than one request matched')
+            raise ValueError("more than one request matched")
 
         return self.get_response_body_from_request_id(request_id=received_requests[0].request_id)
 
@@ -372,9 +383,9 @@ class SeleniumToolKit:
         """
         resource = "/session/%s/chromium/send_command_and_get_result" % self.__driver.session_id
         url = self.__driver.command_executor._url + resource
-        body = json.dumps({'cmd': cmd, 'params': cmd_args})
-        response = self.__driver.command_executor._request('POST', url, body)
-        return response.get('value')
+        body = json.dumps({"cmd": cmd, "params": cmd_args})
+        response = self.__driver.command_executor._request("POST", url, body)
+        return response.get("value")
 
     def scroll_window(self, query_selector: str = None, web_element: WebElement = None) -> None:
         """
@@ -388,7 +399,9 @@ class SeleniumToolKit:
         js_code = "arguments[0].scrollIntoView();"
         self.__driver.execute_script(js_code, web_element)
 
-    def get_all_local_storage(self, ) -> dict:
+    def get_all_local_storage(
+        self,
+    ) -> dict:
         return self.__driver.execute_script(f"return window.localStorage")
 
     def quit(self):

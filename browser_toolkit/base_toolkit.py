@@ -1,24 +1,90 @@
 import asyncio
 import functools
-from abc import ABC, abstractmethod
 import inspect
+from abc import ABC, abstractmethod
 from random import uniform
+from typing import Self
 
-class WebElement:
-    pass
+
+class BaseWebElement(ABC):
+    """Base class for web elements"""
+
+    @abstractmethod
+    async def click(self, selector: str) -> None:
+        """
+        Clicks the element matching the selector
+
+        :param selector: string - CSS selector or XPath
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    async def click_js(self, selector: str) -> None:
+        """
+        Clicks the element matching the selector using JavaScript
+
+        :param selector: string - CSS selector or XPath
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    async def type(self, text: str, selector: str, interval: float | int, clear_before: bool) -> None:
+        """
+        Fills the element matching the selector with the text
+
+        :param text: string - text to fill
+        :param selector: string - CSS selector or XPath
+        :param interval: float or int - time to wait between each character
+        :param clear_before: bool - whether to clear the field before filling
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    async def clear(self, selector: str) -> None:
+        """
+        Clears the element matching the selector
+
+        :param selector: string - CSS selector or XPath
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    async def selector(self, selector: str) -> Self | None:
+        """
+        Queries the web_element and returns the first element matching the selector.
+        :param selector:
+        :param web_element:
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    async def selector_all(self, selector: str) -> list[Self]:
+        """
+        Queries the web_element and returns all elements matching the selector.
+        :param selector:
+        :param web_element:
+        :return:
+        """
+        pass
 
 
 def main_decorator(func):
     @functools.wraps(func)
-    async def wrapper(self: BaseToolkit, *args, **kwargs):
+    async def wrapper(self: BaseBrowserToolkit, *args, **kwargs):
         sleep_time = uniform(*self._wait_time_range)
         await asyncio.sleep(sleep_time)
         try:
             return await func(self, *args, **kwargs)
         except Exception as e:
             if self._exception_directory:
-                await self.save_screenshot(f'{self._exception_directory}/{func.__name__}.png')
+                await self.save_screenshot(f"{self._exception_directory}/{func.__name__}.png")
             raise e
+
     return wrapper
 
 
@@ -34,47 +100,57 @@ class BaseBrowserToolkit(ABC):
     _wait_time_range = (0, 0)
     _exception_directory: str | None = None
 
-    def __init__(self, browser):
-        self.browser = browser
+    # def __init__(self, browser):
+    #     self.browser = browser
 
     # --------------------------- START decorators ---------------------------
     def change_wait_time(self, range_time: tuple = (0, 0)):
         first, last = range_time
 
         if not (first >= 0 and last >= first):
-            raise ValueError(f'range_time must be a tuple with positive values')
+            raise ValueError(f"range_time must be a tuple with positive values")
 
         self._wait_time_range = range_time
 
     def change_exception_directory(self, exception_directory: str):
         self._exception_directory = exception_directory
 
+    # --------------------------- END decorators ---------------------------
+
+    # --------------------------- START session management ---------------------------
     @abstractmethod
-    async def save_screenshot(self, file_path: str) -> None:
+    async def close(self) -> None:
         """
-        Takes a screenshot of the current page and saves it to the exception directory if it is set
-        :param file_path:
+        Closes the browser tab
         :return:
         """
-        pass
-    # --------------------------- END decorators ---------------------------
-    async def query_selector(self, query_selector: str, web_element: WebElement | None = None) -> WebElement | None:
+
+    # --------------------------- END session management ---------------------------
+
+    # --------------------------- START selectors ---------------------------
+    @abstractmethod
+    async def selector(self, selector: str, web_element: BaseWebElement | None = None) -> BaseWebElement | None:
         """
-        Queries the page and returns the first element matching the query selector.
-        :param query_selector:
+        Queries the page and returns the first element matching the selector.
+        If a web_element is provided, it queries within that element instead of the whole page.
+        :param selector:
         :param web_element:
         :return:
         """
         pass
 
-    async def query_selector_all(self, query_selector: str, web_element: WebElement | None = None) -> WebElement | None:
+    @abstractmethod
+    async def selector_all(self, selector: str, web_element: BaseWebElement | None = None) -> list[BaseWebElement]:
         """
-        Queries the page and returns all elements matching the query selector.
-        :param query_selector:
+        Queries the page and returns all elements matching the selector.
+        If a web_element is provided, it queries within that element instead of the whole page.
+        :param selector:
         :param web_element:
         :return:
         """
         pass
+
+    # --------------------------- END selectors ---------------------------
 
     # --------------------------- START Actions ---------------------------
     @abstractmethod
@@ -174,6 +250,7 @@ class BaseBrowserToolkit(ABC):
         :return:
         """
         pass
+
     # --------------------------- END Actions ---------------------------
 
     # --------------------------- START page data ---------------------------
@@ -216,12 +293,26 @@ class BaseBrowserToolkit(ABC):
         :return: str - attribute of the element
         """
         pass
+
+    @abstractmethod
+    async def save_screenshot(self, file_path: str) -> None:
+        """
+        Takes a screenshot of the current page and saves it to the exception directory if it is set
+        :param file_path:
+        :return:
+        """
+        pass
+
     # --------------------------- END page data ---------------------------
 
     # --------------------------- START network ---------------------------
     @abstractmethod
     async def get_network_requests(self) -> list[dict]:
-        ...
+        """
+        Get all network Requests
+        :return:
+        """
+        pass
 
     @abstractmethod
     async def get_network_response_body(self, request_id: str) -> str:
@@ -232,8 +323,8 @@ class BaseBrowserToolkit(ABC):
         :return: str - response body of the network request
         """
         pass
-    # --------------------------- END network ---------------------------
 
+    # --------------------------- END network ---------------------------
 
     # --------------------------- START scripts ---------------------------
     @abstractmethod
@@ -316,6 +407,7 @@ class BaseBrowserToolkit(ABC):
         """
         pass
 
+    @abstractmethod
     async def alert_is_present(self, timeout: int, message: str) -> bool:
         """
         Checks if an alert is present
@@ -354,12 +446,5 @@ class BaseBrowserToolkit(ABC):
         :return: dict
         """
         pass
+
     # --------------------------- END session data ---------------------------
-
-
-    @abstractmethod
-    async def close(self) -> None:
-        """
-        Closes the browser tab
-        :return:
-        """
