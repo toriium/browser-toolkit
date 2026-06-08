@@ -1,7 +1,7 @@
 [project]
 name = "browser-toolkit"
 version = "0.0.1"
-description = "Add your description here"
+description = "Toolkit that provides a single inteface to interact with different browser automations."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [

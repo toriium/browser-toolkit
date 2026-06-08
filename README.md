@@ -1,34 +1,68 @@
-# selenium-toolkit
+# browser-toolkit
 
-This library provides an easier way to use and interact with selenium driver. 
+Browser Toolkit that provides a single inteface to interact with different browser automations.
 
-Features that currently selenium-toolkit can offer:
 
-- ✅️ **More legible selenium code**
-- ✅️ **Abstractions of selenium methods**
-- ✅️ **Helpful tools to use when interacting with browsers**
+Supported automations include:
+- Selenium
+- Playwright
+- Camoufox (Via Playwright implementation)
+- Pydoll
+
+Features that currently browser-toolkit can offer:
+
+- **Async First**
+- **More legible automation code**
+- **Abstractions of browsers methods**
+- **Helpful tools to use when interacting with browsers**
 
 
 
 ## Install
 ```
-pip install selenium-toolkit
+# Pip
+pip install browser-toolkit
+
+# Uv
+uv add browser-toolkit
+
+# Poetry
+poetry add browser-toolkit
 ```
 
 ## Basic
 ```python
-from selenium.webdriver import Chrome
-from selenium_toolkit import SeleniumToolKit
+from playwright.async_api import async_playwright
+from browser_toolkit.playwright import PlaywrightTollKit
+import asyncio
 
-# Create chomedriver instance
-driver = Chrome()
+async def main():
+    # Create an instance
+    async with async_playwright() as p:
+        browser = await p.chromium.launch()
+        page = await browser.new_page()
 
-# Pass driver to SeleniumToolKit
-selenium_kit = SeleniumToolKit(driver=driver)
+        # Pass instance to BrowserToolKit
+        btk = PlaywrightTollKit(browser=browser, page=page)
+        
+        # Navigate to a website
+        await btk.goto('https://www.example.com')
+        
+        # Create a selector
+        se_class = '.class1'
+        
+        # Use BrowserToolKit to find a web element
+        web_element = await btk.selector(selector=se_class)
+    
+        # With returned web_element use click() method
+        await web_element.click()
+        
+        # Or you can click directly with BrowserToolKit
+        await btk.click(selector=se_class)
+        
+        # close instance with BrowserToolKit
+        await btk.close()
 
-# Use SeleniumToolKit to find a web element
-web_element = selenium_kit.query_selector('.class1')
-
-# With returned web_element use click() method
-web_element.click()
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
