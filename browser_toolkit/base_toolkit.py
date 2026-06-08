@@ -5,49 +5,49 @@ from abc import ABC, abstractmethod
 from random import uniform
 from typing import Self
 
+from browser_toolkit.types import Cookie
+
 
 class BaseWebElement(ABC):
     """Base class for web elements"""
 
     @abstractmethod
-    async def click(self, selector: str) -> None:
+    async def click(self, selector: str, delay: int = 0) -> None:
         """
-        Clicks the element matching the selector
+        Clicks the element
 
         :param selector: string - CSS selector or XPath
+        :param delay: int - time to keep the mouse button pressed in seconds (default: 0)
         :return:
         """
         pass
 
     @abstractmethod
-    async def click_js(self, selector: str) -> None:
+    async def click_js(self) -> None:
         """
-        Clicks the element matching the selector using JavaScript
+        Clicks the element using JavaScript
 
-        :param selector: string - CSS selector or XPath
         :return:
         """
         pass
 
     @abstractmethod
-    async def type(self, text: str, selector: str, interval: float | int, clear_before: bool) -> None:
+    async def type(self, text: str, interval: float | int, clear_before: bool) -> None:
         """
-        Fills the element matching the selector with the text
+        Fills the element with the text
 
         :param text: string - text to fill
-        :param selector: string - CSS selector or XPath
-        :param interval: float or int - time to wait between each character
+        :param interval: float or int - time to wait between each character in seconds
         :param clear_before: bool - whether to clear the field before filling
         :return:
         """
         pass
 
     @abstractmethod
-    async def clear(self, selector: str) -> None:
+    async def clear(self) -> None:
         """
-        Clears the element matching the selector
+        Clears the element
 
-        :param selector: string - CSS selector or XPath
         :return:
         """
         pass
@@ -57,7 +57,6 @@ class BaseWebElement(ABC):
         """
         Queries the web_element and returns the first element matching the selector.
         :param selector:
-        :param web_element:
         :return:
         """
         pass
@@ -67,7 +66,6 @@ class BaseWebElement(ABC):
         """
         Queries the web_element and returns all elements matching the selector.
         :param selector:
-        :param web_element:
         :return:
         """
         pass
@@ -154,20 +152,24 @@ class BaseBrowserToolkit(ABC):
 
     # --------------------------- START Actions ---------------------------
     @abstractmethod
-    async def goto(self, url: str) -> None:
+    async def goto(self, url: str, timeout: int) -> None:
         """
         Navigates to URL
-        :param url:
+
+        :param url: url to navigate to
+        :param timeout: maximum time to wait for the page to load in seconds
         :return:
         """
+
         pass
 
     @abstractmethod
-    async def click(self, selector: str) -> None:
+    async def click(self, selector: str, delay: int = 0) -> None:
         """
         Clicks the element matching the selector
 
         :param selector: string - CSS selector or XPath
+        :param delay: int - time to keep the mouse button pressed in seconds (default: 0)
         :return:
         """
         pass
@@ -261,6 +263,16 @@ class BaseBrowserToolkit(ABC):
         Gets the current URL
 
         :return: str - current URL
+        """
+        pass
+
+    @property
+    @abstractmethod
+    async def title(self) -> str:
+        """
+        Gets the page title
+
+        :return: str - page title
         """
         pass
 
@@ -432,7 +444,7 @@ class BaseBrowserToolkit(ABC):
 
     # --------------------------- START session data ---------------------------
     @abstractmethod
-    async def get_cookies(self) -> dict:
+    async def get_cookies(self) -> list[Cookie]:
         """
         Gets all cookies
         :return: dict

@@ -15,17 +15,8 @@ def get_latest_chrome_driver_path() -> str:
 
 
 def get_selenium_toolkit() -> SeleniumToolKit:
-    browser_version = "125.0"
     options = webdriver.ChromeOptions()
-    capabilities = {
-        "browserName": "chrome",
-        "browserVersion": browser_version,
-        "selenoid:options": {
-            "enableVideo": False,  # Will record screen
-            "enableVNC": True,
-        },
-    }
-    options.browser_version = browser_version
+    capabilities = {}
 
     extra_capabilities = {"goog:loggingPrefs": {"performance": "ALL"}}
 
@@ -33,10 +24,9 @@ def get_selenium_toolkit() -> SeleniumToolKit:
 
     [options.set_capability(name=k, value=v) for k, v in capabilities.items()]
 
-    driver = webdriver.Remote(command_executor=WEBDRIVER_URL, options=options)
 
-    # executable_path = get_latest_chrome_driver_path()
-    # driver = webdriver.Chrome(options=options, service=Service(executable_path=executable_path))
+    executable_path = get_latest_chrome_driver_path()
+    driver = webdriver.Chrome(options=options, service=Service(executable_path=executable_path))
 
     stk = SeleniumToolKit(driver=driver)
     return stk
