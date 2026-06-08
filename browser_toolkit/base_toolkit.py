@@ -73,7 +73,7 @@ class BaseWebElement(ABC):
 
 def main_decorator(func):
     @functools.wraps(func)
-    async def wrapper(self: BaseBrowserToolkit, *args, **kwargs):
+    async def wrapper(self: "BaseBrowserToolkit", *args, **kwargs):
         sleep_time = uniform(*self._wait_time_range)
         await asyncio.sleep(sleep_time)
         try:
@@ -86,6 +86,7 @@ def main_decorator(func):
     return wrapper
 
 
+
 class AutoDecorate:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -94,7 +95,7 @@ class AutoDecorate:
                 setattr(cls, attr_name, main_decorator(attr_value))
 
 
-class BaseBrowserToolkit(ABC):
+class BaseBrowserToolkit(ABC, AutoDecorate):
     _wait_time_range = (0, 0)
     _exception_directory: str | None = None
 
@@ -102,7 +103,7 @@ class BaseBrowserToolkit(ABC):
     #     self.browser = browser
 
     # --------------------------- START decorators ---------------------------
-    def change_wait_time(self, range_time: tuple = (0, 0)):
+    async def change_wait_time(self, range_time: tuple = (0, 0)):
         first, last = range_time
 
         if not (first >= 0 and last >= first):
@@ -110,7 +111,7 @@ class BaseBrowserToolkit(ABC):
 
         self._wait_time_range = range_time
 
-    def change_exception_directory(self, exception_directory: str):
+    async def change_exception_directory(self, exception_directory: str):
         self._exception_directory = exception_directory
 
     # --------------------------- END decorators ---------------------------
@@ -152,7 +153,7 @@ class BaseBrowserToolkit(ABC):
 
     # --------------------------- START Actions ---------------------------
     @abstractmethod
-    async def goto(self, url: str, timeout: int) -> None:
+    async def goto(self, url: str, timeout: int = 30) -> None:
         """
         Navigates to URL
 

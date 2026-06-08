@@ -71,7 +71,10 @@ class PlaywrightWebElement(BaseWebElement):
         return [PlaywrightWebElement(web_element=element) for element in elements]
 
 
-class PlaywrigthTollKit(BaseBrowserToolkit):
+
+
+
+class PlaywrightTollKit(BaseBrowserToolkit):
     def __init__(self, browser: Browser, page: Page, *args, **kwargs):
         self.browser: Browser = browser
         self.page: Page = page
@@ -117,7 +120,7 @@ class PlaywrigthTollKit(BaseBrowserToolkit):
 
     # --------------------------- START Actions ---------------------------
 
-    async def goto(self, url: str, timeout: int) -> None:
+    async def goto(self, url: str, timeout: int = 30) -> None:
         """
         Navigates to URL
 

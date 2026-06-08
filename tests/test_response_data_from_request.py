@@ -1,21 +1,18 @@
-import time
+import asyncio
 
-from selenium.webdriver import Chrome, DesiredCapabilities
-from selenium.webdriver.chrome.options import Options
-
-from selenium_toolkit import SeleniumToolKit
-from tests.get_driver import get_selenium_toolkit
+from browser_toolkit.create_browser.playwright import get_playwright_toolkit
 
 
-def test_element_is_present():
-    stk = get_selenium_toolkit()
 
-    stk.goto("https://statusinvest.com.br/")
-    time.sleep(5)
+async def test_element_is_present():
+    btk = await get_playwright_toolkit()
 
-    request_data = stk.get_requests(request_url="https://statusinvest.com.br/account/userdata")
-    value = stk.get_response_body_from_request_id(request_id=request_data[0].request_id)
-    stk.quit()
+    await btk.goto("https://statusinvest.com.br/")
+    await asyncio.sleep(5)
+
+    request_data = await btk.get_requests(request_url="https://statusinvest.com.br/account/userdata")
+    value = await btk.get_response_body_from_request_id(request_id=request_data[0].request_id)
+    await btk.close()
 
     assert value
 

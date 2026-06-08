@@ -1,16 +1,15 @@
-import time
-
-from selenium.webdriver import Chrome
-from selenium.webdriver.chrome.options import Options
-
-from selenium_toolkit import SeleniumToolKit
-from tests.get_driver import get_selenium_toolkit
+import asyncio
+from browser_toolkit.create_browser.playwright import get_playwright_toolkit
 
 
-def test_element_is_present():
-    stk = get_selenium_toolkit()
 
-    stk.goto("https://webscraper.io/test-sites/e-commerce/allinone/product/545")
-    stk.element_is_present(wait_time=5, query_selector='[class="pull-right price"]')
+async def test_element_is_present():
+    btk = await get_playwright_toolkit()
 
-    stk.quit()
+    await btk.goto("https://webscraper.io/test-sites/e-commerce/allinone/product/60")
+    await btk.element_is_present(selector='[class="pull-right price"]', timeout=5)
+
+    await btk.close()
+
+if __name__ == "__main__":
+    asyncio.run(test_element_is_present())

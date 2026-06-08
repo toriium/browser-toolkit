@@ -1,19 +1,21 @@
+import asyncio
+
+from browser_toolkit.create_browser.playwright import get_playwright_toolkit
 from tests.get_driver import get_selenium_toolkit
 
 
-def test_auto_wait():
-    sk = get_selenium_toolkit()
+async def test_auto_wait():
+    btk = await get_playwright_toolkit()
 
-    sk.change_wait_time(range_time=(0, 1))
+    await btk.change_wait_time(range_time=(0, 1))
 
-    sk.goto("https://webscraper.io/test-sites/e-commerce/allinone/product/545")
+    await btk.goto("https://webscraper.io/test-sites/e-commerce/allinone/product/60")
 
-    sk.change_wait_time(range_time=(5, 5))
+    await  btk.change_wait_time(range_time=(5, 5))
 
-    sk.goto("https://webscraper.io/test-sites/e-commerce/allinone/product/544")
-
+    await btk.goto("https://webscraper.io/test-sites/e-commerce/allinone/product/61")
     assert True
 
 
 if __name__ == "__main__":
-    test_auto_wait()
+    asyncio.run(test_auto_wait())

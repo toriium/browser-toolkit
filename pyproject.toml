@@ -11,17 +11,23 @@ dependencies = [
     "selenium>=4.44.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/toriium/browser-toolkit"
+Documentation = "https://github.com/toriium/browser-toolkit/blob/master/README.md"
+Repository = "https://github.com/toriium/browser-toolkit"
+
 [tool.ruff]
 line-length = 120
 target-version = "py312"
 
 [dependency-groups]
 dev = [
+    "anyio>=4.13.0",
     "webdriver-manager>=4.1.2",
 ]
 
+[tool.pytest.ini_options]
+anyio_mode = "auto"
 
-[project.urls]
-Homepage = "https://github.com/toriium/browser-toolkit"
-Documentation = "https://github.com/toriium/browser-toolkit/blob/master/README.md"
-Repository = "https://github.com/toriium/browser-toolkit"
+
+
