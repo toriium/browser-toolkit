@@ -2,6 +2,7 @@ import asyncio
 import functools
 import inspect
 from abc import ABC, abstractmethod
+from datetime import datetime
 from random import uniform
 from typing import Self
 
@@ -70,17 +71,49 @@ class BaseWebElement(ABC):
         """
         pass
 
+def now_str() -> str:
+    return datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
+
 
 def main_decorator(func):
     @functools.wraps(func)
     async def wrapper(self: "BaseBrowserToolkit", *args, **kwargs):
+        has_screenshot = isinstance(self._screenshot_directory, str)
+        actions_names = [
+            # "goto",
+            "click",
+            "click_js",
+            "type",
+            "clear",
+            "scroll_to_element",
+            "scroll_to_top",
+            "scroll_to_bottom",
+            "reload",
+            "hard_reload",
+        ]
+        func_name = func.__name__
+
+        # Ignore save_screenshot
+        if func_name == "save_screenshot":
+            return await func(self, *args, **kwargs)
+
+        # Waits a random time before executing the function
         sleep_time = uniform(*self._wait_time_range)
-        await asyncio.sleep(sleep_time)
+        if func_name in actions_names or func_name == "goto":
+            await asyncio.sleep(sleep_time)
+
+        # Takes screenshot before executing the function
+        if func_name in actions_names and has_screenshot:
+            file_path = f"{self._screenshot_directory}/{now_str()}_{func_name}.jpeg"
+            await self.save_screenshot(file_path=file_path)
+
+        # Executes the function and catches exceptions to take a screenshot if it fails
         try:
             return await func(self, *args, **kwargs)
         except Exception as e:
-            if self._exception_directory:
-                await self.save_screenshot(f"{self._exception_directory}/{func.__name__}.png")
+            if has_screenshot:
+                file_path = f"{self._screenshot_directory}/{now_str()}_exeption.jpeg"
+                await self.save_screenshot(file_path=file_path)
             raise e
 
     return wrapper
@@ -96,7 +129,7 @@ class AutoDecorate:
 
 class BaseBrowserToolkit(ABC, AutoDecorate):
     _wait_time_range = (0, 0)
-    _exception_directory: str | None = None
+    _screenshot_directory: str | None = None
 
     # def __init__(self, browser):
     #     self.browser = browser
@@ -110,8 +143,8 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
 
         self._wait_time_range = range_time
 
-    async def change_exception_directory(self, exception_directory: str):
-        self._exception_directory = exception_directory
+    async def change_screenshot_directory(self, screenshot_directory: str):
+        self._screenshot_directory = screenshot_directory
 
     # --------------------------- END decorators ---------------------------
 

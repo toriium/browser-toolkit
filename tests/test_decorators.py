@@ -15,5 +15,17 @@ async def test_auto_wait():
     assert True
 
 
+async def test_screenshot_exception():
+    btk = await get_playwright_toolkit()
+
+    await btk.goto("https://webscraper.io/test-sites/e-commerce/allinone/product/60")
+
+    screenshot_directory = "./screenshots"
+    await btk.change_screenshot_directory(screenshot_directory=screenshot_directory)
+
+    # It will fail
+    await btk.click(selector="Fake")
+
+
 if __name__ == "__main__":
-    asyncio.run(test_auto_wait())
+    asyncio.run(test_screenshot_exception())
