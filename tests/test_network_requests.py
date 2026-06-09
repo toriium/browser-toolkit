@@ -3,7 +3,6 @@ import asyncio
 from browser_toolkit.create_browser.playwright import get_playwright_toolkit
 
 
-
 async def test_element_is_present():
     btk = await get_playwright_toolkit()
 

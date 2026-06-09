@@ -71,6 +71,7 @@ class BaseWebElement(ABC):
         """
         pass
 
+
 def now_str() -> str:
     return datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
 
@@ -484,8 +485,9 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         """
         pass
 
-    async def get_cookies_filter(self, name: str | None = None, domain: str | None = None, path: str | None = None) -> \
-            list[Cookie]:
+    async def get_cookies_filter(
+        self, name: str | None = None, domain: str | None = None, path: str | None = None
+    ) -> list[Cookie]:
         """
         Gets cookies filtered by name, domain and path
         :param name:
@@ -548,8 +550,9 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         pass
 
     @abstractmethod
-    async def delete_cookie_filter(self, name: str | None = None, domain: str | None = None,
-                                   path: str | None = None) -> None:
+    async def delete_cookie_filter(
+        self, name: str | None = None, domain: str | None = None, path: str | None = None
+    ) -> None:
         """
         Deletes cookies by name, domain, and path
 

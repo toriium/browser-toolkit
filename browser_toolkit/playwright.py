@@ -479,8 +479,9 @@ class PlaywrightTollKit(BaseBrowserToolkit):
         """
         await self.page.context.clear_cookies(name=name)
 
-    async def delete_cookie_filter(self, name: str | None = None, domain: str | None = None,
-                                   path: str | None = None) -> None:
+    async def delete_cookie_filter(
+        self, name: str | None = None, domain: str | None = None, path: str | None = None
+    ) -> None:
         """
         Deletes cookies by name, domain, and path
 

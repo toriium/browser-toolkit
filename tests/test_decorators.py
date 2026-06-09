@@ -2,6 +2,7 @@ import asyncio
 
 from browser_toolkit.create_browser.playwright import get_playwright_toolkit
 
+
 async def test_auto_wait():
     btk = await get_playwright_toolkit()
 
@@ -9,7 +10,7 @@ async def test_auto_wait():
 
     await btk.goto("https://webscraper.io/test-sites/e-commerce/allinone/product/60")
 
-    await  btk.change_wait_time(range_time=(5, 5))
+    await btk.change_wait_time(range_time=(5, 5))
 
     await btk.goto("https://webscraper.io/test-sites/e-commerce/allinone/product/61")
     assert True
