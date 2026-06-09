@@ -1,8 +1,6 @@
 import asyncio
 
 from browser_toolkit.create_browser.playwright import get_playwright_toolkit
-from tests.get_driver import get_selenium_toolkit
-
 
 async def test_auto_wait():
     btk = await get_playwright_toolkit()

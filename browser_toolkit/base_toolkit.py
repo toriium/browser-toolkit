@@ -86,7 +86,6 @@ def main_decorator(func):
     return wrapper
 
 
-
 class AutoDecorate:
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -445,10 +444,86 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
 
     # --------------------------- START session data ---------------------------
     @abstractmethod
-    async def get_cookies(self) -> list[Cookie]:
+    async def get_all_cookies(self) -> list[Cookie]:
         """
         Gets all cookies
-        :return: dict
+        :return: list[Cookie]
+        """
+        pass
+
+    async def get_cookies_filter(self, name: str | None = None, domain: str | None = None, path: str | None = None) -> \
+            list[Cookie]:
+        """
+        Gets cookies filtered by name, domain and path
+        :param name:
+        :param domain:
+        :param path:
+        :return:
+        """
+        cookies = await self.get_all_cookies()
+        return [cookie for cookie in cookies if cookie.name == name]
+
+    async def get_cookie_by_name(self, name: str) -> Cookie | None:
+        """
+        Gets a cookie by name
+
+        :param name: string - name of the cookie
+        :return: Cookie | None - cookie with the given name
+        """
+        cookies = await self.get_all_cookies()
+        for cookie in cookies:
+            if cookie.name == name:
+                return cookie
+        return None
+
+    @abstractmethod
+    async def add_cookie(self, cookie: Cookie) -> None:
+        """
+        Adds a cookie to the current session
+
+        :param cookie: Cookie - cookie to add
+        :return:
+        """
+        pass
+
+    async def add_cookies(self, cookies: list[Cookie]) -> None:
+        """
+        Adds multiple cookies to the current session
+
+        :param cookies: list[Cookie] - cookies to add
+        :return:
+        """
+        for cookie in cookies:
+            await self.add_cookie(cookie)
+
+    @abstractmethod
+    async def delete_all_cookies(self) -> None:
+        """
+        Deletes all cookies from the current session
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    async def delete_cookie_by_name(self, name: str) -> None:
+        """
+        Deletes a cookie by name
+
+        :param name: string - name of the cookie to delete
+        :return:
+        """
+        pass
+
+    @abstractmethod
+    async def delete_cookie_filter(self, name: str | None = None, domain: str | None = None,
+                                   path: str | None = None) -> None:
+        """
+        Deletes cookies by name, domain, and path
+
+        :param name:
+        :param domain:
+        :param path:
+        :return:
         """
         pass
 
@@ -459,5 +534,15 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :return: dict
         """
         pass
+
+    async def get_local_storage_filter(self, name: str) -> str | None:
+        """
+        Gets a local storage item value by name
+
+        :param name:
+        :return:
+        """
+        local_storage = await self.get_all_local_storage()
+        return local_storage.get(name, None)
 
     # --------------------------- END session data ---------------------------

@@ -1,6 +1,7 @@
 from typing import Self
 
-from playwright.async_api import Page, Browser, TimeoutError, ElementHandle
+from playwright._impl._api_structures import SetCookieParam
+from playwright.async_api import Page, Browser, TimeoutError, ElementHandle, Cookie as PlaywrightCookie
 
 from browser_toolkit.base_toolkit import BaseBrowserToolkit, BaseWebElement
 from browser_toolkit.types import Cookie
@@ -69,9 +70,6 @@ class PlaywrightWebElement(BaseWebElement):
         """
         elements = await self.web_element.query_selector_all(selector=selector)
         return [PlaywrightWebElement(web_element=element) for element in elements]
-
-
-
 
 
 class PlaywrightTollKit(BaseBrowserToolkit):
@@ -420,18 +418,78 @@ class PlaywrightTollKit(BaseBrowserToolkit):
     # --------------------------- END wait ---------------------------
 
     # --------------------------- START session data ---------------------------
-
-    async def get_cookies(self) -> list[Cookie]:
+    async def get_all_cookies(self) -> list[Cookie]:
         """
         Gets all cookies
         :return: dict
         """
-        raw_cookies = await self.page.context.cookies()
+        raw_cookies: list[PlaywrightCookie] = await self.page.context.cookies()
         transformed_cookies: list[Cookie] = []
-        for cookie in raw_cookies:
-            transformed_cookies.append(cookie)
+        for raw_cookie in raw_cookies:
+            transformed_cookie = Cookie(
+                name=raw_cookie.get("name"),
+                value=raw_cookie.get("value"),
+                url=raw_cookie.get("url"),
+                domain=raw_cookie.get("domain"),
+                path=raw_cookie.get("path"),
+                expires=raw_cookie.get("expires"),
+                httpOnly=raw_cookie.get("httpOnly"),
+                secure=raw_cookie.get("secure"),
+                sameSite=raw_cookie.get("sameSite"),
+                partitionKey=raw_cookie.get("partitionKey"),
+            )
+            transformed_cookies.append(transformed_cookie)
 
         return transformed_cookies
+
+    async def add_cookie(self, cookie: Cookie) -> None:
+        """
+        Adds a cookie to the current session
+
+        :param cookie: Cookie - cookie to add
+        :return:
+        """
+        transformed_cookie: SetCookieParam = SetCookieParam(
+            name=cookie.name,
+            value=cookie.value,
+            url=cookie.url,
+            domain=cookie.domain,
+            path=cookie.path,
+            expires=cookie.expires,
+            httpOnly=cookie.httpOnly,
+            secure=cookie.secure,
+            sameSite=cookie.sameSite,
+            partitionKey=cookie.partitionKey,
+        )
+        await self.page.context.add_cookies(cookies=[transformed_cookie])
+
+    async def delete_all_cookies(self) -> None:
+        """
+        Deletes all cookies from the current session
+        :return:
+        """
+        await self.page.context.clear_cookies()
+
+    async def delete_cookie_by_name(self, name: str) -> None:
+        """
+        Deletes a cookie by name
+
+        :param name: string - name of the cookie to delete
+        :return:
+        """
+        await self.page.context.clear_cookies(name=name)
+
+    async def delete_cookie_filter(self, name: str | None = None, domain: str | None = None,
+                                   path: str | None = None) -> None:
+        """
+        Deletes cookies by name, domain, and path
+
+        :param name:
+        :param domain:
+        :param path:
+        :return:
+        """
+        await self.page.context.clear_cookies(name=name, domain=domain, path=path)
 
     async def get_all_local_storage(self) -> dict:
         """

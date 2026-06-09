@@ -1,21 +1,24 @@
 from dataclasses import dataclass
-from typing import TypedDict, Literal, Optional
 from enum import StrEnum
+from typing import Literal
+
+from pydantic import BaseModel
 
 
-class Cookie(TypedDict):
+class Cookie(BaseModel):
     name: str
     value: str
-    domain: str
-    path: str
-    expires: float
-    httpOnly: bool
-    secure: bool
-    sameSite: Literal["Lax", "None", "Strict"]
-    partitionKey: str | None
+    url: str | None = None
+    domain: str | None = None
+    path: str | None = None
+    expires: float | None = None
+    httpOnly: bool | None = None
+    secure: bool | None = None
+    sameSite: Literal["Lax", "None", "Strict"] | None = None
+    partitionKey: str | None | None = None
 
 
-class LocalStorage(TypedDict):
+class LocalStorage(BaseModel):
     key: str
     value: str
 
