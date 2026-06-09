@@ -1,9 +1,5 @@
 import time
 
-from selenium.webdriver import Chrome
-from selenium.webdriver.chrome.options import Options
-
-from selenium_toolkit import SeleniumToolKit
 from tests.get_driver import get_selenium_toolkit
 
 

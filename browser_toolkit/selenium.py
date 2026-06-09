@@ -17,7 +17,7 @@ from selenium.common.exceptions import (
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 
 from browser_toolkit.types import Request, RequestType, Redirect
-from selenium_toolkit.utils import create_locator
+from browser_toolkit.selenium_toolkit.utils import create_locator
 import functools
 
 

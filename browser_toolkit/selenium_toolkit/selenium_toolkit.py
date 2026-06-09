@@ -1,12 +1,10 @@
 import json
-import traceback
 import time
 from random import uniform
 from typing import Union, Type
 from dataclasses import dataclass
 from http.cookies import SimpleCookie
 
-import trio
 from selenium.webdriver.chromium.webdriver import ChromiumDriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support import expected_conditions as EC
@@ -19,7 +17,7 @@ from selenium.common.exceptions import (
 )
 from selenium.webdriver.remote.webdriver import WebDriver, WebElement
 
-from selenium_toolkit.utils import create_locator
+from browser_toolkit.selenium_toolkit.utils import create_locator
 from enum import StrEnum
 import functools
 
