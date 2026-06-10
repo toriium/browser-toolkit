@@ -3,18 +3,16 @@ import asyncio
 from browser_toolkit.create_browser.playwright import get_playwright_toolkit
 
 
-async def test_element_is_present():
+async def test_network_requests():
     btk = await get_playwright_toolkit()
 
-    await btk.goto("https://statusinvest.com.br/")
+    await btk.goto("https://scrapingtest.com/ecommerce/pagination")
     await asyncio.sleep(5)
 
-    request_data = await btk.get_requests(request_url="https://statusinvest.com.br/account/userdata")
-    value = await btk.get_response_body_from_request_id(request_id=request_data[0].request_id)
-    await btk.close()
+    all_requests = await btk.get_network_requests()
 
-    assert value
+    assert all_requests
 
 
 if __name__ == "__main__":
-    test_element_is_present()
+    asyncio.run(test_network_requests())

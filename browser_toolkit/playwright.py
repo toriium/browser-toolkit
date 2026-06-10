@@ -1,7 +1,7 @@
 from typing import Self
 
 from playwright._impl._api_structures import SetCookieParam
-from playwright.async_api import Page, Browser, TimeoutError, ElementHandle, Cookie as PlaywrightCookie
+from playwright.async_api import Page, Request, Browser, TimeoutError, ElementHandle, Cookie as PlaywrightCookie
 
 from browser_toolkit.base_toolkit import BaseBrowserToolkit, BaseWebElement
 from browser_toolkit.types import Cookie
@@ -152,7 +152,7 @@ class PlaywrightTollKit(BaseBrowserToolkit):
         :return:
         """
         command = f"document.querySelector('{selector}').click()"
-        await self.page.evaluate(expression=command)
+        await self.execute_script(script=command)
 
     async def type(self, text: str, selector: str, interval: float | int = 0, clear_before: bool = False) -> None:
         """
@@ -193,7 +193,8 @@ class PlaywrightTollKit(BaseBrowserToolkit):
 
         :return:
         """
-        await self.page.evaluate("window.scrollTo(0, 0);")
+        cmd = "window.scrollTo(0, 0)"
+        await self.execute_script(script=cmd)
 
     async def scroll_to_bottom(self) -> None:
         """
@@ -201,7 +202,8 @@ class PlaywrightTollKit(BaseBrowserToolkit):
 
         :return:
         """
-        await self.page.evaluate("window.scrollTo(0, document.body.scrollHeight);")
+        cmd = "window.scrollTo(0, document.body.scrollHeight);"
+        await self.execute_script(script=cmd)
 
     async def reload(self) -> None:
         """
@@ -281,12 +283,13 @@ class PlaywrightTollKit(BaseBrowserToolkit):
 
     # --------------------------- START network ---------------------------
 
-    async def get_network_requests(self) -> list[dict]:
+    async def get_network_requests(self) -> list[Request]:
         """
         Get all network Requests
         :return:
         """
-        raise_not_implemented()
+        # return await self.page.requests()
+        pass
 
     async def get_network_response_body(self, request_id: str) -> str:
         """
@@ -317,7 +320,8 @@ class PlaywrightTollKit(BaseBrowserToolkit):
         :param params: dict - parameters for the CDP command
         :return:
         """
-        raise_not_implemented()
+        client = await self.page.context.new_cdp_session(self.page)
+        return await client.send(cmd, params=params)
 
     # --------------------------- END scripts ---------------------------
 
@@ -503,7 +507,8 @@ class PlaywrightTollKit(BaseBrowserToolkit):
         Gets all local storage
         :return: dict
         """
-        local_storage = await self.page.evaluate("() => Object.fromEntries(Object.entries(localStorage))")
+        cmd = "() => Object.fromEntries(Object.entries(localStorage))"
+        local_storage = await self.execute_script(script=cmd)
         if not isinstance(local_storage, dict):
             local_storage = {}
         return local_storage

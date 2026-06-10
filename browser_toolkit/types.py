@@ -41,6 +41,7 @@ class Redirect:
 
 @dataclass
 class Request:
+    method: str
     url: str
     request_id: str
     cookies: dict
