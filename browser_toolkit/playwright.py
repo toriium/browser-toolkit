@@ -12,11 +12,10 @@ class PlaywrightWebElement(BaseWebElement):
     def __init__(self, web_element: ElementHandle):
         self.web_element = web_element
 
-    async def click(self, selector: str, delay: int = 0) -> None:
+    async def click(self, delay: int = 0) -> None:
         """
         Clicks the element
 
-        :param selector: string - CSS selector or XPath
         :param delay: int - time to keep the mouse button pressed in seconds (default: 0)
         :return:
         """
@@ -30,12 +29,12 @@ class PlaywrightWebElement(BaseWebElement):
         """
         await self.web_element.evaluate("element => element.click()")
 
-    async def type(self, text: str, interval: float | int, clear_before: bool) -> None:
+    async def type(self, text: str, interval: float | int = 0, clear_before: bool = False) -> None:
         """
         Fills the element with the text
 
         :param text: string - text to fill
-        :param interval: float or int - time to wait between each character in seconds
+        :param interval: float or int - time to wait in seconds between each character
         :param clear_before: bool - whether to clear the field before filling
         :return:
         """
@@ -79,12 +78,19 @@ class PlaywrightTollKit(BaseBrowserToolkit):
 
     # --------------------------- START session management ---------------------------
 
-    async def close(self) -> None:
+    async def close_page(self) -> None:
         """
         Closes the browser tab
         :return:
         """
         await self.page.close()
+
+    async def close_browser(self) -> None:
+        """
+        Closes the browser process and all its pages
+        :return:
+        """
+        await self.browser.close()
 
     # --------------------------- END session management ---------------------------
 
@@ -148,13 +154,13 @@ class PlaywrightTollKit(BaseBrowserToolkit):
         command = f"document.querySelector('{selector}').click()"
         await self.page.evaluate(expression=command)
 
-    async def type(self, text: str, selector: str, interval: float | int, clear_before: bool) -> None:
+    async def type(self, text: str, selector: str, interval: float | int = 0, clear_before: bool = False) -> None:
         """
         Fills the element matching the selector with the text
 
         :param text: string - text to fill
         :param selector: string - CSS selector or XPath
-        :param interval: float or int - time to wait between each character
+        :param interval: float or int - time to wait in seconds between each character
         :param clear_before: bool - whether to clear the field before filling
         :return:
         """
