@@ -2,8 +2,17 @@ from dataclasses import dataclass
 from enum import StrEnum
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
+
+class BoundingBox(BaseModel):
+    """
+    Represents the position and size of an element on the page.
+    """
+    x: float = Field(description="the x coordinate of the element in pixels")
+    y: float = Field(description="the y coordinate of the element in pixels")
+    width: float = Field(description="the width of the element in pixels")
+    height: float = Field(description="the height of the element in pixels")
 
 class Cookie(BaseModel):
     name: str

@@ -1,10 +1,10 @@
-from typing import Self
+from typing import Self, Any
 
 from playwright._impl._api_structures import SetCookieParam
 from playwright.async_api import Page, Request, Browser, TimeoutError, ElementHandle, Cookie as PlaywrightCookie
 
 from browser_toolkit.base_toolkit import BaseBrowserToolkit, BaseWebElement
-from browser_toolkit.types import Cookie
+from browser_toolkit.types import Cookie, BoundingBox
 from browser_toolkit.utils import raise_not_implemented
 
 
@@ -12,14 +12,48 @@ class PlaywrightWebElement(BaseWebElement):
     def __init__(self, web_element: ElementHandle):
         self.web_element = web_element
 
-    async def click(self, delay: int = 0) -> None:
+    async def get_text(self) -> str:
+        """
+        Gets the text from the element
+
+        :return: str - text of the element
+        """
+        text = await self.web_element.text_content()
+        return text or ""
+
+    async def get_attribute(self, attribute: str) -> str | None:
+        """
+        Gets the attribute from the element
+
+        :param attribute: string - attribute name
+        :return: str - attribute of the element
+        """
+        return await self.web_element.get_attribute(name=attribute)
+
+    async def get_position(self) -> BoundingBox:
+        """
+        Gets the position of the element
+
+        :return: BoundingBox - position of the element
+        """
+        bounding_box = await self.web_element.bounding_box()
+        if not bounding_box:
+            raise ValueError("Could not get bounding box for element")
+        return BoundingBox(
+            x=bounding_box["x"],
+            y=bounding_box["y"],
+            width=bounding_box["width"],
+            height=bounding_box["height"],
+        )
+
+    async def click(self, hold_time: int = 0) -> None:
         """
         Clicks the element
 
-        :param delay: int - time to keep the mouse button pressed in seconds (default: 0)
+        :param hold_time: int - time to keep the mouse button pressed in seconds (default: 0)
         :return:
         """
-        await self.web_element.click(delay=delay)
+        await self.web_element.click(delay=hold_time*1000)
 
     async def click_js(self) -> None:
         """
@@ -50,7 +84,7 @@ class PlaywrightWebElement(BaseWebElement):
         """
         await self.web_element.fill("")
 
-    async def selector(self, selector: str) -> Self | None:
+    async def query(self, selector: str) -> Self | None:
         """
         Queries the web_element and returns the first element matching the selector.
         :param selector:
@@ -61,7 +95,7 @@ class PlaywrightWebElement(BaseWebElement):
             return PlaywrightWebElement(web_element=element)
         return None
 
-    async def selector_all(self, selector: str) -> list[Self]:
+    async def query_all(self, selector: str) -> list[Self]:
         """
         Queries the web_element and returns all elements matching the selector.
         :param selector:
@@ -96,26 +130,22 @@ class PlaywrightTollKit(BaseBrowserToolkit):
 
     # --------------------------- START selectors ---------------------------
 
-    async def selector(self, selector: str, web_element: BaseWebElement | None = None) -> BaseWebElement | None:
+    async def query(self, selector: str) -> BaseWebElement | None:
         """
         Queries the page and returns the first element matching the selector.
-        If a web_element is provided, it queries within that element instead of the whole page.
         :param selector:
-        :param web_element:
-        :return:
+        :return: BaseWebElement | None
         """
         element = await self.page.query_selector(selector=selector)
         if element:
             return PlaywrightWebElement(web_element=element)
         return None
 
-    async def selector_all(self, selector: str, web_element: BaseWebElement | None = None) -> list[BaseWebElement]:
+    async def query_all(self, selector: str) -> list[BaseWebElement]:
         """
         Queries the page and returns all elements matching the selector.
-        If a web_element is provided, it queries within that element instead of the whole page.
-        :param selector:
-        :param web_element:
-        :return:
+        :param selector: str
+        :return: list[BaseWebElement]
         """
         elements = await self.page.query_selector_all(selector=selector)
         return [PlaywrightWebElement(web_element=element) for element in elements]
@@ -134,15 +164,15 @@ class PlaywrightTollKit(BaseBrowserToolkit):
         """
         await self.page.goto(url=url, timeout=timeout * 1000)
 
-    async def click(self, selector: str, delay: int = 0) -> None:
+    async def click(self, selector: str, hold_time: int = 0) -> None:
         """
         Clicks the element matching the selector
 
         :param selector: string - CSS selector or XPath
-        :param delay: int - time to keep the mouse button pressed in seconds (default: 0)
+        :param hold_time: int - time to keep the mouse button pressed in seconds (default: 0)
         :return:
         """
-        await self.page.locator(selector=selector).click(delay=delay)
+        await self.page.locator(selector=selector).click(delay=hold_time*1000)
 
     async def click_js(self, selector: str) -> None:
         """
@@ -184,8 +214,8 @@ class PlaywrightTollKit(BaseBrowserToolkit):
         :param selector: string - CSS selector or XPath
         :return:
         """
-        command = f"document.querySelector('{selector}').scrollIntoView()"
-        await self.page.evaluate(expression=command)
+        script = f"document.querySelector('{selector}').scrollIntoView()"
+        await self.execute_script(script=script)
 
     async def scroll_to_top(self) -> None:
         """
@@ -193,8 +223,8 @@ class PlaywrightTollKit(BaseBrowserToolkit):
 
         :return:
         """
-        cmd = "window.scrollTo(0, 0)"
-        await self.execute_script(script=cmd)
+        script = "window.scrollTo(0, 0)"
+        await self.execute_script(script=script)
 
     async def scroll_to_bottom(self) -> None:
         """
@@ -202,8 +232,8 @@ class PlaywrightTollKit(BaseBrowserToolkit):
 
         :return:
         """
-        cmd = "window.scrollTo(0, document.body.scrollHeight);"
-        await self.execute_script(script=cmd)
+        script = "window.scrollTo(0, document.body.scrollHeight);"
+        await self.execute_script(script=script)
 
     async def reload(self) -> None:
         """
@@ -219,8 +249,8 @@ class PlaywrightTollKit(BaseBrowserToolkit):
 
         :return:
         """
-        cmd = "window.location.reload()"
-        await self.page.evaluate(expression=cmd)
+        script = "window.location.reload()"
+        await self.execute_script(script=script)
 
     # --------------------------- END Actions ---------------------------
 
@@ -259,9 +289,10 @@ class PlaywrightTollKit(BaseBrowserToolkit):
         :param selector: string - CSS selector or XPath
         :return: str - text of the element
         """
-        return await self.page.locator(selector=selector).text_content()
+        text = await self.page.locator(selector=selector).text_content()
+        return text or ""
 
-    async def get_attribute(self, selector: str, attribute: str) -> str:
+    async def get_attribute(self, selector: str, attribute: str) -> str | None:
         """
         Gets the attribute from the element matching the selector
 
@@ -303,7 +334,7 @@ class PlaywrightTollKit(BaseBrowserToolkit):
     # --------------------------- END network ---------------------------
 
     # --------------------------- START scripts ---------------------------
-    async def execute_script(self, script: str) -> any:
+    async def execute_script(self, script: str) -> Any:
         """
         Executes the JavaScript script in the context of the current page
 
@@ -312,7 +343,7 @@ class PlaywrightTollKit(BaseBrowserToolkit):
         """
         return await self.page.evaluate(expression=script)
 
-    async def execute_cdp_cmd(self, cmd: str, params: dict) -> any:
+    async def execute_cdp_cmd(self, cmd: str, params: dict) -> Any:
         """
         Executes the Chrome DevTools Protocol command in the context of the current page
 
@@ -505,7 +536,7 @@ class PlaywrightTollKit(BaseBrowserToolkit):
     async def get_all_local_storage(self) -> dict:
         """
         Gets all local storage
-        :return: dict
+        :return: list[Cookie]
         """
         cmd = "() => Object.fromEntries(Object.entries(localStorage))"
         local_storage = await self.execute_script(script=cmd)

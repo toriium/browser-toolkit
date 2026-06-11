@@ -1,3 +1,4 @@
+
 from playwright.async_api import async_playwright, Browser, Page
 from browser_toolkit.playwright import PlaywrightTollKit
 
@@ -19,9 +20,7 @@ async def get_playwright_toolkit() -> PlaywrightTollKit:
 
 
 async def main():
-    async with async_playwright() as p:
-        browser = await p.chromium.launch()
-        page = await browser.new_page()
-        await page.goto("https://playwright.dev")
-        print(await page.title())
-        await browser.close()
+    browser_toolkit = await get_playwright_toolkit()
+    await browser_toolkit.goto("https://www.google.com")
+    title = await browser_toolkit.title
+    await browser_toolkit.close_browser()

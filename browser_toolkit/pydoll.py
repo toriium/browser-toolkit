@@ -1,29 +1,28 @@
-import asyncio
-import functools
-import inspect
-from abc import ABC, abstractmethod
-from datetime import datetime
-from random import uniform
 from typing import Self, Any
 
+from pydoll.protocol.network.types import CookieParam, Cookie as PydollCookie
+from pydoll.browser.tab import Tab
+from pydoll.browser.chromium.chrome import Chrome
+from pydoll.elements.web_element import WebElement
+
+from browser_toolkit.base_toolkit import BaseBrowserToolkit, BaseWebElement
 from browser_toolkit.types import Cookie, BoundingBox
+from browser_toolkit.utils import raise_not_implemented
 
 
+class PydollWebElement(BaseWebElement):
+    def __init__(self, web_element: WebElement):
+        self.web_element = web_element
 
-
-
-class BaseWebElement(ABC):
-    """Base class for web elements"""
-
-    @abstractmethod
     async def get_text(self) -> str:
         """
         Gets the text from the element
 
         :return: str - text of the element
         """
+        text = await self.web_element.text
+        return text or ""
 
-    @abstractmethod
     async def get_attribute(self, attribute: str) -> str | None:
         """
         Gets the attribute from the element
@@ -31,19 +30,24 @@ class BaseWebElement(ABC):
         :param attribute: string - attribute name
         :return: str - attribute of the element
         """
-        pass
+        return self.web_element.get_attribute(name=attribute)
 
-    @abstractmethod
     async def get_position(self) -> BoundingBox:
         """
         Gets the position of the element
 
         :return: BoundingBox - position of the element
         """
-        pass
+        bounding_box = await self.web_element.bounds
+        if not bounding_box:
+            raise ValueError("Could not get bounding box for element")
+        return BoundingBox(
+            x=bounding_box["x"],
+            y=bounding_box["y"],
+            width=bounding_box["width"],
+            height=bounding_box["height"],
+        )
 
-
-    @abstractmethod
     async def click(self, hold_time: int = 0) -> None:
         """
         Clicks the element
@@ -51,18 +55,16 @@ class BaseWebElement(ABC):
         :param hold_time: int - time to keep the mouse button pressed in seconds (default: 0)
         :return:
         """
-        pass
+        await self.web_element.click(hold_time=hold_time, humanize=True)
 
-    @abstractmethod
     async def click_js(self) -> None:
         """
         Clicks the element using JavaScript
 
         :return:
         """
-        pass
+        await self.web_element.click_using_js()
 
-    @abstractmethod
     async def type(self, text: str, interval: float | int = 0, clear_before: bool = False) -> None:
         """
         Fills the element with the text
@@ -72,154 +74,88 @@ class BaseWebElement(ABC):
         :param clear_before: bool - whether to clear the field before filling
         :return:
         """
-        pass
+        if clear_before:
+            await self.clear()
+        await self.web_element.type_text(text=text, humanize=True, interval=interval)
 
-    @abstractmethod
     async def clear(self) -> None:
         """
         Clears the element
 
         :return:
         """
-        pass
+        await self.web_element.clear()
 
-    @abstractmethod
     async def query(self, selector: str) -> Self | None:
         """
         Queries the web_element and returns the first element matching the selector.
         :param selector:
         :return:
         """
-        pass
+        element = await self.web_element.query(expression=selector, timeout=0, find_all=False, raise_exc=False)
+        if element:
+            return PydollWebElement(web_element=element)
+        return None
 
-    @abstractmethod
     async def query_all(self, selector: str) -> list[Self]:
         """
         Queries the web_element and returns all elements matching the selector.
         :param selector:
         :return:
         """
-        pass
+        elements = await self.web_element.query(expression=selector, timeout=0, find_all=True, raise_exc=False)
+        return [PydollWebElement(web_element=element) for element in elements]
 
 
-def now_str() -> str:
-    return datetime.now().strftime("%Y-%m-%dT%H-%M-%S")
-
-
-def main_decorator(func):
-    @functools.wraps(func)
-    async def wrapper(self: "BaseBrowserToolkit", *args, **kwargs):
-        has_screenshot = isinstance(self._screenshot_directory, str)
-        actions_names = [
-            # "goto",
-            "click",
-            "click_js",
-            "type",
-            "clear",
-            "scroll_to_element",
-            "scroll_to_top",
-            "scroll_to_bottom",
-            "reload",
-            "hard_reload",
-        ]
-        func_name = func.__name__
-
-        # Ignore save_screenshot
-        if func_name == "save_screenshot":
-            return await func(self, *args, **kwargs)
-
-        # Waits a random time before executing the function
-        sleep_time = uniform(*self._wait_time_range)
-        if func_name in actions_names or func_name == "goto":
-            await asyncio.sleep(sleep_time)
-
-        # Takes screenshot before executing the function
-        if func_name in actions_names and has_screenshot:
-            file_path = f"{self._screenshot_directory}/{now_str()}_{func_name}.jpeg"
-            await self.save_screenshot(file_path=file_path)
-
-        # Executes the function and catches exceptions to take a screenshot if it fails
-        try:
-            return await func(self, *args, **kwargs)
-        except Exception as e:
-            if has_screenshot:
-                file_path = f"{self._screenshot_directory}/{now_str()}_exeption.jpeg"
-                await self.save_screenshot(file_path=file_path)
-            raise e
-
-    return wrapper
-
-
-class AutoDecorate:
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        for attr_name, attr_value in cls.__dict__.items():
-            if inspect.iscoroutinefunction(attr_value):
-                setattr(cls, attr_name, main_decorator(attr_value))
-
-
-class BaseBrowserToolkit(ABC, AutoDecorate):
-    _wait_time_range = (0, 0)
-    _screenshot_directory: str | None = None
-
-    # def __init__(self, browser):
-    #     self.browser = browser
-
-    # --------------------------- START decorators ---------------------------
-    async def change_wait_time(self, range_time: tuple = (0, 0)):
-        first, last = range_time
-
-        if not (first >= 0 and last >= first):
-            raise ValueError(f"range_time must be a tuple with positive values")
-
-        self._wait_time_range = range_time
-
-    async def change_screenshot_directory(self, screenshot_directory: str):
-        self._screenshot_directory = screenshot_directory
-
-    # --------------------------- END decorators ---------------------------
+class PydollTollKit(BaseBrowserToolkit):
+    def __init__(self, browser: Chrome, page: Tab, *args, **kwargs):
+        self.browser: Chrome = browser
+        self.page: Tab = page
 
     # --------------------------- START session management ---------------------------
-    @abstractmethod
+
     async def close_page(self) -> None:
         """
-        Closes the current browser tab | Page
+        Closes the browser tab
         :return:
         """
+        await self.page.close()
 
-    @abstractmethod
     async def close_browser(self) -> None:
         """
         Closes the browser process and all its pages
         :return:
         """
-        pass
+        await self.browser.close()
 
     # --------------------------- END session management ---------------------------
 
     # --------------------------- START selectors ---------------------------
-    @abstractmethod
+
     async def query(self, selector: str) -> BaseWebElement | None:
         """
         Queries the page and returns the first element matching the selector.
         :param selector:
         :return: BaseWebElement | None
         """
-        pass
+        element = await self.page.query(expression=selector, timeout=0, find_all=False, raise_exc=False)
+        if element:
+            return PydollWebElement(web_element=element)
+        return None
 
-    @abstractmethod
     async def query_all(self, selector: str) -> list[BaseWebElement]:
         """
         Queries the page and returns all elements matching the selector.
         :param selector: str
         :return: list[BaseWebElement]
         """
-        pass
+        elements = await self.page.query(expression=selector, timeout=0, find_all=True, raise_exc=False)
+        return [PydollWebElement(web_element=element) for element in elements]
 
     # --------------------------- END selectors ---------------------------
 
     # --------------------------- START Actions ---------------------------
-    @abstractmethod
+
     async def goto(self, url: str, timeout: int = 30) -> None:
         """
         Navigates to URL
@@ -228,21 +164,19 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param timeout: maximum time to wait for the page to load in seconds
         :return:
         """
+        await self.page.go_to(url=url, timeout=timeout)
 
-        pass
-
-    @abstractmethod
-    async def click(self, selector: str, delay: int = 0) -> None:
+    async def click(self, selector: str, hold_time: int = 0) -> None:
         """
         Clicks the element matching the selector
 
         :param selector: string - CSS selector or XPath
-        :param delay: int - time to keep the mouse button pressed in seconds (default: 0)
+        :param hold_time: int - time to keep the mouse button pressed in seconds (default: 0)
         :return:
         """
-        pass
+        element = await self.page.query(expression=selector, timeout=0, find_all=False, raise_exc=True)
+        await element.click(hold_time=hold_time, humanize=True)
 
-    @abstractmethod
     async def click_js(self, selector: str) -> None:
         """
         Clicks the element matching the selector using JavaScript
@@ -250,10 +184,10 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param selector: string - CSS selector or XPath
         :return:
         """
-        pass
+        element = await self.page.query(expression=selector, timeout=0, find_all=False, raise_exc=True)
+        await element.click_using_js()
 
-    @abstractmethod
-    async def type(self, text: str, selector: str,interval: float | int = 0, clear_before: bool = False) -> None:
+    async def type(self, text: str, selector: str, interval: float | int = 0, clear_before: bool = False) -> None:
         """
         Fills the element matching the selector with the text
 
@@ -263,9 +197,12 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param clear_before: bool - whether to clear the field before filling
         :return:
         """
-        pass
+        if clear_before:
+            await self.clear(selector=selector)
 
-    @abstractmethod
+        element = await self.page.query(expression=selector, timeout=0, find_all=False, raise_exc=True)
+        await element.type_text(text=text, humanize=True, interval=interval)
+
     async def clear(self, selector: str) -> None:
         """
         Clears the element matching the selector
@@ -273,9 +210,9 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param selector: string - CSS selector or XPath
         :return:
         """
-        pass
+        element = await self.page.query(expression=selector, timeout=0, find_all=False, raise_exc=True)
+        await element.clear()
 
-    @abstractmethod
     async def scroll_to_element(self, selector: str) -> None:
         """
         Scrolls to the element matching the selector
@@ -283,78 +220,74 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param selector: string - CSS selector or XPath
         :return:
         """
-        pass
+        command = f"document.querySelector('{selector}').scrollIntoView()"
+        await self.execute_script(script=command)
 
-    @abstractmethod
     async def scroll_to_top(self) -> None:
         """
         Scrolls to the top of the page
 
         :return:
         """
-        pass
+        cmd = "window.scrollTo(0, 0)"
+        await self.execute_script(script=cmd)
 
-    @abstractmethod
     async def scroll_to_bottom(self) -> None:
         """
         Scrolls to the bottom of the page
 
         :return:
         """
-        pass
+        cmd = "window.scrollTo(0, document.body.scrollHeight);"
+        await self.execute_script(script=cmd)
 
-    @abstractmethod
     async def reload(self) -> None:
         """
         Reloads the page
 
         :return:
         """
-        pass
+        await self.page.refresh(ignore_cache=False)
 
-    @abstractmethod
     async def hard_reload(self) -> None:
         """
         Hard reloads the page (ignoring cache)
 
         :return:
         """
-        pass
+        await self.page.refresh(ignore_cache=True)
+
 
     # --------------------------- END Actions ---------------------------
 
     # --------------------------- START page data ---------------------------
     @property
-    @abstractmethod
     async def current_url(self) -> str:
         """
         Gets the current URL
 
         :return: str - current URL
         """
-        pass
+        return await self.page.current_url
 
     @property
-    @abstractmethod
     async def title(self) -> str:
         """
         Gets the page title
 
         :return: str - page title
         """
-        pass
+        return await self.page.title
 
     @property
-    @abstractmethod
     async def page_source(self) -> str:
         """
         Gets the page source
 
         :return: str - page source
         """
-        pass
+        return await self.page.page_source
 
-    @abstractmethod
     async def get_text(self, selector: str) -> str:
         """
         Gets the text from the element matching the selector
@@ -362,39 +295,40 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param selector: string - CSS selector or XPath
         :return: str - text of the element
         """
+        element = await self.page.query(expression=selector, timeout=0, find_all=False, raise_exc=True)
+        return await element.text
 
-    @abstractmethod
     async def get_attribute(self, selector: str, attribute: str) -> str | None:
         """
         Gets the attribute from the element matching the selector
 
-        :param selector: string - CSS selector or XPath
-        :param attribute: string - attribute name
+        :param selector: str - CSS selector or XPath
+        :param attribute: str - attribute name
         :return: str - attribute of the element
         """
-        pass
+        element = await self.page.query(expression=selector, timeout=0, find_all=False, raise_exc=True)
+        return element.get_attribute(name=attribute)
 
-    @abstractmethod
     async def save_screenshot(self, file_path: str) -> None:
         """
         Takes a screenshot of the current page and saves it to the exception directory if it is set
         :param file_path:
         :return:
         """
-        pass
+        await self.page.take_screenshot(path=file_path, quality=100)
 
     # --------------------------- END page data ---------------------------
 
     # --------------------------- START network ---------------------------
-    @abstractmethod
+
     async def get_network_requests(self) -> list[dict]:
         """
         Get all network Requests
         :return:
         """
+        return await self.page.get_network_logs()
         pass
 
-    @abstractmethod
     async def get_network_response_body(self, request_id: str) -> str:
         """
         Gets the response body of the network request with the given request ID
@@ -402,12 +336,11 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param request_id: string - network request ID
         :return: str - response body of the network request
         """
-        pass
+        return await self.page.get_network_response_body(request_id=request_id)
 
     # --------------------------- END network ---------------------------
 
     # --------------------------- START scripts ---------------------------
-    @abstractmethod
     async def execute_script(self, script: str) -> Any:
         """
         Executes the JavaScript script in the context of the current page
@@ -415,9 +348,8 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param script: string - JavaScript code to execute
         :return:
         """
-        pass
+        return await self.page.execute_script(script=script)
 
-    @abstractmethod
     async def execute_cdp_cmd(self, cmd: str, params: dict) -> Any:
         """
         Executes the Chrome DevTools Protocol command in the context of the current page
@@ -426,12 +358,11 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param params: dict - parameters for the CDP command
         :return:
         """
-        pass
+        raise_not_implemented()
 
     # --------------------------- END scripts ---------------------------
 
     # --------------------------- START wait ---------------------------
-    @abstractmethod
     async def element_is_present(self, selector: str, timeout: int) -> bool:
         """
         Checks if the element matching the selector is present
@@ -440,9 +371,9 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param timeout: int - seconds to wait for the element
         :return: bool - whether the element is present
         """
-        pass
+        element = await self.page.query(expression=selector, timeout=timeout, find_all=True, raise_exc=False)
+        return bool(element)
 
-    @abstractmethod
     async def element_is_visible(self, selector: str, timeout: int) -> bool:
         """
         Checks if the element matching the selector is visible
@@ -451,9 +382,9 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param timeout: int - seconds to wait for the element
         :return: bool - whether the element is visible
         """
-        pass
+        element = await self.page.query(expression=selector, timeout=timeout, find_all=True, raise_exc=False)
+        return bool(element)
 
-    @abstractmethod
     async def element_is_invisible(self, selector: str, timeout: int) -> bool:
         """
         Checks if the element matching the selector is invisible
@@ -462,9 +393,9 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param timeout: int - seconds to wait for the element
         :return: bool - whether the element is invisible
         """
-        pass
+        element = await self.page.query(expression=selector, timeout=timeout, find_all=True, raise_exc=False)
+        return True if element is None else False
 
-    @abstractmethod
     async def element_is_clickable(self, selector: str, timeout: int) -> bool:
         """
         Checks if the element matching the selector is clickable
@@ -473,9 +404,11 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param timeout: int - seconds to wait for the element
         :return: bool - whether the element is clickable
         """
-        pass
+        element = await self.page.query(expression=selector, timeout=timeout, find_all=False, raise_exc=False)
+        if not element:
+            return False
+        return await element.is_visible()
 
-    @abstractmethod
     async def text_is_present(self, text: str, selector: str, timeout: int) -> bool:
         """
         Checks if the text is present in the element matching the selector
@@ -485,9 +418,13 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param timeout: int - seconds to wait for the element
         :return: bool - whether the text is present in the element
         """
-        pass
+        element = await self.query(selector=selector)
+        if not element:
+            return False
+        element_text = await element.get_text()
+        return text in element_text
 
-    @abstractmethod
+
     async def alert_is_present(self, timeout: int, message: str) -> bool:
         """
         Checks if an alert is present
@@ -496,9 +433,8 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param message: str - alert message
         :return: bool - whether an alert is present
         """
-        pass
+        raise_not_implemented()
 
-    @abstractmethod
     async def page_is_loading(self, timeout: int) -> bool:
         """
         Checks if the page is ready
@@ -506,46 +442,39 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param timeout: int - seconds to wait for the page to be ready
         :return: bool - whether the page is ready
         """
-        pass
+        cmd = "return document.readyState"
+        if self.page.execute_script(cmd) != "complete":
+            return True
+        else:
+            return False
 
     # --------------------------- END wait ---------------------------
 
     # --------------------------- START session data ---------------------------
-    @abstractmethod
     async def get_all_cookies(self) -> list[Cookie]:
         """
         Gets all cookies
         :return: list[Cookie]
         """
-        pass
+        raw_cookies: list[PydollCookie] = await self.page.get_cookies()
+        transformed_cookies: list[Cookie] = []
+        for raw_cookie in raw_cookies:
+            transformed_cookie = Cookie(
+                name=raw_cookie.get("name"),
+                value=raw_cookie.get("value"),
+                url=raw_cookie.get("url"),
+                domain=raw_cookie.get("domain"),
+                path=raw_cookie.get("path"),
+                expires=raw_cookie.get("expires"),
+                httpOnly=raw_cookie.get("httpOnly"),
+                secure=raw_cookie.get("secure"),
+                sameSite=raw_cookie.get("sameSite"),
+                partitionKey=raw_cookie.get("partitionKey"),
+            )
+            transformed_cookies.append(transformed_cookie)
 
-    async def get_cookies_filter(
-        self, name: str | None = None, domain: str | None = None, path: str | None = None
-    ) -> list[Cookie]:
-        """
-        Gets cookies filtered by name, domain and path
-        :param name:
-        :param domain:
-        :param path:
-        :return:
-        """
-        cookies = await self.get_all_cookies()
-        return [cookie for cookie in cookies if cookie.name == name]
+        return transformed_cookies
 
-    async def get_cookie_by_name(self, name: str) -> Cookie | None:
-        """
-        Gets a cookie by name
-
-        :param name: string - name of the cookie
-        :return: Cookie | None - cookie with the given name
-        """
-        cookies = await self.get_all_cookies()
-        for cookie in cookies:
-            if cookie.name == name:
-                return cookie
-        return None
-
-    @abstractmethod
     async def add_cookie(self, cookie: Cookie) -> None:
         """
         Adds a cookie to the current session
@@ -553,27 +482,27 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param cookie: Cookie - cookie to add
         :return:
         """
-        pass
+        transformed_cookie: CookieParam = CookieParam(
+            name=cookie.name,
+            value=cookie.value,
+            url=cookie.url,
+            domain=cookie.domain,
+            path=cookie.path,
+            expires=cookie.expires,
+            httpOnly=cookie.httpOnly,
+            secure=cookie.secure,
+            sameSite=cookie.sameSite,
+            partitionKey=cookie.partitionKey,
+        )
+        await self.page.set_cookies(cookies=[transformed_cookie])
 
-    async def add_cookies(self, cookies: list[Cookie]) -> None:
-        """
-        Adds multiple cookies to the current session
-
-        :param cookies: list[Cookie] - cookies to add
-        :return:
-        """
-        for cookie in cookies:
-            await self.add_cookie(cookie)
-
-    @abstractmethod
     async def delete_all_cookies(self) -> None:
         """
         Deletes all cookies from the current session
         :return:
         """
-        pass
+        await self.page.delete_all_cookies()
 
-    @abstractmethod
     async def delete_cookie_by_name(self, name: str) -> None:
         """
         Deletes a cookie by name
@@ -581,9 +510,8 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param name: string - name of the cookie to delete
         :return:
         """
-        pass
+        raise_not_implemented()
 
-    @abstractmethod
     async def delete_cookie_filter(
         self, name: str | None = None, domain: str | None = None, path: str | None = None
     ) -> None:
@@ -595,53 +523,20 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         :param path:
         :return:
         """
-        pass
+        raise_not_implemented()
 
-    @abstractmethod
     async def get_all_local_storage(self) -> dict:
         """
         Gets all local storage
         :return: dict
         """
-        pass
+        cmd = "() => Object.fromEntries(Object.entries(localStorage))"
+        raw = await self.page.execute_script(script=cmd, return_by_value=True)
+        if not isinstance(raw, dict):
+            return {}
+        local_storage = raw["result"]["result"]["value"]
+        return local_storage
 
-    async def get_local_storage(self, name: str) -> str | None:
-        """
-        Gets a local storage item value by name
 
-        :param name:
-        :return:
-        """
-        local_storage = await self.get_all_local_storage()
-        return local_storage.get(name, None)
-
-    async def set_local_storage(self, name: str, value: str) -> None:
-        """
-        Sets a local storage item
-
-        :param name:
-        :param value:
-        :return:
-        """
-        script = f'localStorage.setItem("{name}", "{value}");'
-        await self.execute_script(script)
-
-    async def delete_all_local_storage(self) -> None:
-        """
-        Deletes all local storage items
-        :return:
-        """
-        script = 'localStorage.clear();'
-        await self.execute_script(script)
-
-    async def delete_local_storage(self, name: str) -> None:
-        """
-        Deletes a local storage item by name
-
-        :param name:
-        :return:
-        """
-        script = f'localStorage.removeItem("{name}");'
-        await self.execute_script(script)
 
     # --------------------------- END session data ---------------------------

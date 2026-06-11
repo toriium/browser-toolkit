@@ -225,7 +225,8 @@ class SeleniumToolKit:
             return False
 
     def page_is_loading(self) -> bool:
-        if self.__driver.execute_script("return document.readyState") != "complete":
+        cmd = "return document.readyState"
+        if self.__driver.execute_script(cmd) != "complete":
             return True
         else:
             return False
