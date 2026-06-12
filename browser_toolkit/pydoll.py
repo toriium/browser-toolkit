@@ -126,7 +126,7 @@ class PydollTollKit(BaseBrowserToolkit):
         Closes the browser process and all its pages
         :return:
         """
-        await self.browser.close()
+        await self.browser.stop()
 
     # --------------------------- END session management ---------------------------
 
