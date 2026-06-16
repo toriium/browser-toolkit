@@ -232,12 +232,12 @@ class BaseBrowserToolkit(ABC, AutoDecorate):
         pass
 
     @abstractmethod
-    async def click(self, selector: str, delay: int = 0) -> None:
+    async def click(self, selector: str, hold_time: int = 0) -> None:
         """
         Clicks the element matching the selector
 
         :param selector: string - CSS selector or XPath
-        :param delay: int - time to keep the mouse button pressed in seconds (default: 0)
+        :param hold_time: int - time to keep the mouse button pressed in seconds (default: 0)
         :return:
         """
         pass
